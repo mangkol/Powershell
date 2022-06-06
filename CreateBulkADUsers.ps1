@@ -1,11 +1,33 @@
-﻿Import-Module ActiveDirectory
+Import-Module ActiveDirectory
 $new_users = Import-Csv \\princeplc.com.kh\file-server\Software\Powershell\New_Users.csv
 #$existing_users = Get-ADUser -Filter * | Select-Object SamAccountname
 #$rootdomain = (Get-ADDomain).DistinguishedName
 #$domain = (Get-ADDomain).DNSRoot
+
+### $domain = "yourdomain.com"
 $domain = "princebank.com.kh"
+
+### Specify logfile location
 $logfile = "\\princeplc.com.kh\file-server\Software\Powershell\logs.txt"
-Clear-Content $logfile
+
+
+### Check if log file already exist
+If(Test-Path $logfile)
+{
+    try{
+        Clear-Content $logfile ### If exist then clear its content
+    }
+    catch{
+        Write-Host "Unable to clear logs content"
+    }
+    
+}
+else 
+{
+    New-Item $logfile ### If not, then create a new log file
+}
+
+
 $fax = ""
 
 
@@ -24,7 +46,7 @@ foreach ($user in $new_users){
     $oupath = $user.oupath
     $oucode = $user.oucode
     $branch = $user.branch
-#    $address = $user.address
+    $address = $user.address
 
 
     if(Get-ADUser -F {SamAccountName -eq $samaccountname}){
@@ -70,7 +92,7 @@ foreach ($user in $new_users){
         -ChangePasswordAtLogon $true `
         -ScriptPath "Logon.vbs" `
         -POBox "$displayname" `
-#        -StreetAddress "$address"
+        -StreetAddress "$address"
 
 
         $default_groups | Add-ADGroupMember -Members $samaccountname
@@ -79,7 +101,6 @@ foreach ($user in $new_users){
     catch{
         Write-Host "$samaccountname creation failed" -ForegroundColor Red
         $messages = $_
-        #$ErrorMessage = $_.Exception.Message
     }
     Finally{
         $Time=Get-Date    
